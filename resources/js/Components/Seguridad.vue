@@ -1,33 +1,62 @@
+<!-- resources/js/Components/Seguridad.vue -->
+
 <template>
-  <div>
-    <canvas id="chart" width="400" height="200"></canvas>
-  </div>
+    <div>
+        <form @submit.prevent="subirArchivo" enctype="multipart/form-data">
+            @csrf
+            <input type="file" name="archivo" ref="archivo" required>
+            <button type="submit">Subir Excel</button>
+        </form>
+        <div v-if="mensaje" :class="{ 'success-message': mensaje.tipo === 'success', 'error-message': mensaje.tipo === 'error' }">
+            {{ mensaje.texto }}
+        </div>
+        <!-- Agrega el resto de tu contenido del componente aquí -->
+    </div>
 </template>
 
 <script>
-import Chart from 'chart.js/auto';
+import axios from 'axios';
 
 export default {
-  name: 'Gráfica',
-  mounted() {
-    const ctx = document.getElementById('chart').getContext('2d');
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
-        datasets: [{
-          label: 'Puntuación',
-          data: [100, 150, 200, 250, 300, 350],
-          borderColor: '#000',
-          backgroundColor: '#ccc',
-        }],
-      },
-      options: {
-        title: {
-          text: 'Gráfico de líneas simple',
-        },
-      },
-    });
-  },
-};
+    data() {
+        return {
+            mensaje: null,
+        };
+    },
+    methods: {
+        subirArchivo() {
+            const archivo = this.$refs.archivo.files[0];
+
+            if (!archivo) {
+                this.mensaje = { tipo: 'error', texto: 'Por favor, selecciona un archivo.' };
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('archivo', archivo);
+
+            // Enviar el archivo al servidor utilizando axios
+            axios.post('/procesar-archivo', formData)
+                .then(response => {
+                    // Actualizar mensaje con éxito
+                    this.mensaje = { tipo: 'success', texto: response.data };
+                })
+                .catch(error => {
+                    // Actualizar mensaje con error detallado
+                    this.mensaje = { tipo: 'error', texto: 'Error al procesar el archivo. Detalles: ' + error.response.data.error };
+                    console.error(error);
+                });
+        }
+    }
+}
 </script>
+
+<style scoped>
+.success-message {
+    color: green;
+}
+
+.error-message {
+    color: red;
+}
+</style>
